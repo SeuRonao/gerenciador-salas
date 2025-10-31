@@ -62,12 +62,36 @@ def remover_sala() -> bool:
     return True
 
 
+def buscar_sala_por_id() -> dict | None:
+    """Busca uma sala por id em SALAS e imprime o resultado."""
+    if not SALAS:
+        print("[aviso] Não há salas cadastradas para buscar.")
+        return None
+
+    print("=== Buscar Sala por ID ===")
+    id_str = input("Digite o id da sala para buscar: ").strip()
+    try:
+        alvo = int(id_str)
+    except (TypeError, ValueError):
+        print("[erro] O id deve ser um número inteiro.")
+        return None
+
+    sala = next((s for s in SALAS if s["id"] == alvo), None)
+    if sala is None:
+        print(f"[erro] Sala com id {alvo} não encontrada.")
+        return None
+
+    print("[ok] Sala encontrada:", sala)
+    return sala
+
+
 def menu():
     """Menu monolítico para escolher operações sobre SALAS."""
     while True:
         print("\n=== Menu ===")
         print("1) Cadastrar sala")
         print("2) Remover sala")
+        print("3) Buscar sala por id")
         print("0) Sair")
         opção = input("Escolha uma opção: ").strip()
 
@@ -75,6 +99,8 @@ def menu():
             cadastrar_sala()
         elif opção == "2":
             remover_sala()
+        elif opção == "3":
+            buscar_sala_por_id()
         elif opção == "0":
             print("Saindo...")
             break
