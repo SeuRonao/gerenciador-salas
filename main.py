@@ -28,8 +28,62 @@ def cadastrar_sala() -> dict | None:
     return sala
 
 
+def remover_sala() -> bool:
+    """
+    Remove uma sala por id da variável global SALAS.
+
+    Exibe a lista atual (id - nome [capacidade]) para auxiliar a escolha.
+    Retorna True se removeu, False caso contrário.
+    """
+    if not SALAS:
+        print("[aviso] Não há salas cadastradas para remover.")
+        return False
+
+    print("=== Remoção de Sala ===")
+    print("Salas atuais:")
+    for s in SALAS:
+        print(f"- {s['id']}: {s['nome']} [{s['capacidade']}]")
+
+    id_str = input("Digite o id da sala a remover: ").strip()
+    try:
+        alvo = int(id_str)
+    except (TypeError, ValueError):
+        print("[erro] O id deve ser um número inteiro.")
+        return False
+
+    # Procura a sala pelo id
+    idx = next((i for i, s in enumerate(SALAS) if s["id"] == alvo), -1)
+    if idx == -1:
+        print(f"[erro] Sala com id {alvo} não encontrada.")
+        return False
+
+    removida = SALAS.pop(idx)
+    print("[ok] Sala removida:", removida)
+    return True
+
+
+def menu():
+    """Menu monolítico para escolher operações sobre SALAS."""
+    while True:
+        print("\n=== Menu ===")
+        print("1) Cadastrar sala")
+        print("2) Remover sala")
+        print("0) Sair")
+        opção = input("Escolha uma opção: ").strip()
+
+        if opção == "1":
+            cadastrar_sala()
+        elif opção == "2":
+            remover_sala()
+        elif opção == "0":
+            print("Saindo...")
+            break
+        else:
+            print("[erro] Opção inválida. Tente novamente.")
+
+
 def main():
-    cadastrar_sala()
+    menu()
 
 
 if __name__ == "__main__":
