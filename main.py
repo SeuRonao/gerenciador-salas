@@ -1,4 +1,8 @@
+from datetime import datetime
+
+
 SALAS: list[dict] = []
+EVENTOS: list[dict] = []
 
 
 def cadastrar_sala() -> dict | None:
@@ -95,6 +99,75 @@ def listar_salas() -> None:
         print(f"- {s['id']}: {s['nome']} [{s['capacidade']}]")
 
 
+def criar_evento() -> dict | None:
+    """Fluxo interativo para criar (agendar) um evento na variável global EVENTOS."""
+    if not SALAS:
+        print(
+            "[aviso] Não há salas cadastradas. Cadastre uma sala antes de agendar eventos."
+        )
+        return None
+
+    print("=== Agendar Evento ===")
+    print("Salas disponíveis:")
+    for s in SALAS:
+        print(f"- {s['id']}: {s['nome']} [{s['capacidade']}]")
+
+    sala_id_str = input("Digite o id da sala: ").strip()
+    try:
+        sala_id = int(sala_id_str)
+    except (TypeError, ValueError):
+        print("[erro] O id da sala deve ser um número inteiro.")
+        return None
+
+    titulo = input("Título do evento: ").strip()
+    if not titulo:
+        print("[erro] O título do evento não pode ser vazio.")
+        return None
+
+    print("Formato de data/hora: YYYY-MM-DD HH:MM (ex.: 2025-10-31 14:30)")
+    inicio_str = input("Início: ").strip()
+    fim_str = input("Fim: ").strip()
+    try:
+        inicio = datetime.strptime(inicio_str, "%Y-%m-%d %H:%M")
+        fim = datetime.strptime(fim_str, "%Y-%m-%d %H:%M")
+    except ValueError:
+        print("[erro] Datas inválidas. Use o formato YYYY-MM-DD HH:MM.")
+        return None
+
+    # Validações básicas (agora dentro da função única)
+    if not any(s.get("id") == sala_id for s in SALAS):
+        print("[erro] Sala informada não existe.")
+        return None
+    if fim <= inicio:
+        print("[erro] O horário de fim deve ser maior que o de início.")
+        return None
+
+    # Checa conflitos na mesma sala
+    for e in EVENTOS:
+        if e.get("sala_id") == sala_id:
+            ei = e.get("inicio")
+            ef = e.get("fim")
+            if not isinstance(ei, datetime) or not isinstance(ef, datetime):
+                # Caso dados inesperados, ignore o registro
+                continue
+            # Conflito se houver sobreposição dos intervalos
+            if not (fim <= ei or inicio >= ef):
+                print("[erro] Conflito de horário para esta sala.")
+                return None
+
+    novo_id = (EVENTOS[-1]["id"] + 1) if EVENTOS else 1
+    evento = {
+        "id": novo_id,
+        "sala_id": sala_id,
+        "titulo": titulo,
+        "inicio": inicio,
+        "fim": fim,
+    }
+    EVENTOS.append(evento)
+    print("[ok] Evento agendado:", evento)
+    return evento
+
+
 def menu():
     """Menu monolítico para escolher operações sobre SALAS."""
     while True:
@@ -103,6 +176,7 @@ def menu():
         print("2) Remover sala")
         print("3) Buscar sala por id")
         print("4) Listar salas")
+        print("5) Agendar evento")
         print("0) Sair")
         opção = input("Escolha uma opção: ").strip()
 
@@ -114,6 +188,8 @@ def menu():
             buscar_sala_por_id()
         elif opção == "4":
             listar_salas()
+        elif opção == "5":
+            criar_evento()
         elif opção == "0":
             print("Saindo...")
             break

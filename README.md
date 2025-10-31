@@ -4,10 +4,9 @@ Esse é um projeto para ensinar de forma didática como criar um sistema simples
 
 ## Funcionalidades
 
-- Cadastro de salas
-- Agendamento de eventos
-- Listagem de salas e eventos
-- Cancelamento de eventos
+- Cadastro de salas (criar, remover, buscar por id, listar)
+- Agendamento de eventos (com validação de conflito por sala)
+- Planejado: Listagem e cancelamento de eventos
 
 ## Como executar
 
@@ -49,3 +48,20 @@ O histórico de versões e explicação sobre o que estamos fazendo está dispon
 
 Inicialmente, o projeto não utiliza banco de dados, como também boas práticas de programação, para manter a simplicidade e o foco no aprendizado dos conceitos básicos.
 Futuramente, podemos evoluir o projeto para incluir essas melhorias e principalmente, mostrar o motivo de ser importante manter o código limpo e organizado.
+
+## Como usar (exemplo rápido)
+
+1. Rode o programa e utilize o menu interativo.
+2. Cadastre ao menos uma sala.
+3. Agende um evento escolhendo a opção "Agendar evento".
+
+Formato de data/hora solicitado:
+
+- `YYYY-MM-DD HH:MM` (ex.: `2025-10-31 14:30`)
+
+Regras de agendamento:
+
+- A sala deve existir.
+- O título não pode ser vazio.
+- O horário de fim deve ser maior que o de início.
+- Não pode haver sobreposição de horários para a mesma sala.
