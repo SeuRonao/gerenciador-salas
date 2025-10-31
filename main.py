@@ -85,6 +85,16 @@ def buscar_sala_por_id() -> dict | None:
     return sala
 
 
+def listar_salas() -> None:
+    """Lista todas as salas cadastradas em SALAS."""
+    print("=== Listar Salas ===")
+    if not SALAS:
+        print("[aviso] Não há salas cadastradas.")
+        return
+    for s in SALAS:
+        print(f"- {s['id']}: {s['nome']} [{s['capacidade']}]")
+
+
 def menu():
     """Menu monolítico para escolher operações sobre SALAS."""
     while True:
@@ -92,6 +102,7 @@ def menu():
         print("1) Cadastrar sala")
         print("2) Remover sala")
         print("3) Buscar sala por id")
+        print("4) Listar salas")
         print("0) Sair")
         opção = input("Escolha uma opção: ").strip()
 
@@ -101,6 +112,8 @@ def menu():
             remover_sala()
         elif opção == "3":
             buscar_sala_por_id()
+        elif opção == "4":
+            listar_salas()
         elif opção == "0":
             print("Saindo...")
             break
