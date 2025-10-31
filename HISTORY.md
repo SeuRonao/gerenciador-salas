@@ -17,3 +17,5 @@ Todas as mudanças significativas neste projeto serão documentadas neste arquiv
 - Atualizado o menu com a opção "Cancelar evento".
 - Adicionada função `atualizar_evento()` para editar título, sala e horários com validações.
 - Atualizado o menu com a opção "Atualizar evento".
+- Adicionada função `listar_eventos()` para listar todos os eventos ordenados.
+- Atualizado o menu com a opção "Listar eventos".

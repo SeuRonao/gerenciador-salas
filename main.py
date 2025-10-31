@@ -287,6 +287,32 @@ def atualizar_evento() -> dict | None:
     return ev
 
 
+def listar_eventos() -> None:
+    """Lista todos os eventos cadastrados."""
+    print("=== Listar Eventos ===")
+    if not EVENTOS:
+        print("[aviso] Não há eventos cadastrados.")
+        return
+
+    # Mapa auxiliar de sala_id -> nome
+    mapa_salas = {s.get("id"): s.get("nome") for s in SALAS}
+    # Ordena por início, depois sala_id e id
+    ordenados = sorted(
+        EVENTOS,
+        key=lambda e: (
+            e.get("inicio"),
+            e.get("sala_id"),
+            e.get("id"),
+        ),
+    )
+    for e in ordenados:
+        sid = e.get("sala_id")
+        snome = mapa_salas.get(sid, "(desconhecida)")
+        ini = e.get("inicio")
+        fim = e.get("fim")
+        print(f"- {e['id']}: {e['titulo']} (sala {sid} - {snome}) [{ini} -> {fim}]")
+
+
 def menu():
     """Menu monolítico para escolher operações sobre SALAS."""
     while True:
@@ -298,6 +324,7 @@ def menu():
         print("5) Agendar evento")
         print("6) Cancelar evento")
         print("7) Atualizar evento")
+        print("8) Listar eventos")
         print("0) Sair")
         opção = input("Escolha uma opção: ").strip()
 
@@ -315,6 +342,8 @@ def menu():
             cancelar_evento()
         elif opção == "7":
             atualizar_evento()
+        elif opção == "8":
+            listar_eventos()
         elif opção == "0":
             print("Saindo...")
             break
