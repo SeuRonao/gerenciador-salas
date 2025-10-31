@@ -13,3 +13,5 @@ Todas as mudanças significativas neste projeto serão documentadas neste arquiv
 - Implementado agendamento de eventos em memória com validação de conflitos por sala.
 - Adicionada função `criar_evento()` (fluxo interativo com input/print).
 - Atualizado o menu com a opção "Agendar evento".
+- Adicionada função `cancelar_evento()` para remover eventos por id.
+- Atualizado o menu com a opção "Cancelar evento".

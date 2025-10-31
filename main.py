@@ -168,6 +168,36 @@ def criar_evento() -> dict | None:
     return evento
 
 
+def cancelar_evento() -> bool:
+    """Remove um evento por id da variável global EVENTOS."""
+    if not EVENTOS:
+        print("[aviso] Não há eventos agendados para cancelar.")
+        return False
+
+    print("=== Cancelar Evento ===")
+    print("Eventos atuais:")
+    for e in EVENTOS:
+        ini = e.get("inicio")
+        fim = e.get("fim")
+        print(f"- {e['id']}: {e['titulo']} (sala {e['sala_id']}) [{ini} -> {fim}]")
+
+    id_str = input("Digite o id do evento a cancelar: ").strip()
+    try:
+        alvo = int(id_str)
+    except (TypeError, ValueError):
+        print("[erro] O id do evento deve ser um número inteiro.")
+        return False
+
+    idx = next((i for i, e in enumerate(EVENTOS) if e.get("id") == alvo), -1)
+    if idx == -1:
+        print(f"[erro] Evento com id {alvo} não encontrado.")
+        return False
+
+    removido = EVENTOS.pop(idx)
+    print("[ok] Evento cancelado:", removido)
+    return True
+
+
 def menu():
     """Menu monolítico para escolher operações sobre SALAS."""
     while True:
@@ -177,6 +207,7 @@ def menu():
         print("3) Buscar sala por id")
         print("4) Listar salas")
         print("5) Agendar evento")
+        print("6) Cancelar evento")
         print("0) Sair")
         opção = input("Escolha uma opção: ").strip()
 
@@ -190,6 +221,8 @@ def menu():
             listar_salas()
         elif opção == "5":
             criar_evento()
+        elif opção == "6":
+            cancelar_evento()
         elif opção == "0":
             print("Saindo...")
             break
