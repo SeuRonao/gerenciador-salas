@@ -15,3 +15,5 @@ Todas as mudanças significativas neste projeto serão documentadas neste arquiv
 - Atualizado o menu com a opção "Agendar evento".
 - Adicionada função `cancelar_evento()` para remover eventos por id.
 - Atualizado o menu com a opção "Cancelar evento".
+- Adicionada função `atualizar_evento()` para editar título, sala e horários com validações.
+- Atualizado o menu com a opção "Atualizar evento".

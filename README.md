@@ -7,6 +7,7 @@ Esse é um projeto para ensinar de forma didática como criar um sistema simples
 - Cadastro de salas (criar, remover, buscar por id, listar)
 - Agendamento de eventos (com validação de conflito por sala)
 - Cancelamento de eventos
+- Atualização de eventos
 
 ## Como executar
 
@@ -55,6 +56,8 @@ Futuramente, podemos evoluir o projeto para incluir essas melhorias e principalm
 2. Cadastre ao menos uma sala.
 3. Agende um evento escolhendo a opção "Agendar evento".
 4. Para remover um evento, use a opção "Cancelar evento" e informe o id do evento listado.
+5. Para atualizar um evento, use a opção "Atualizar evento"; deixe campos em branco para manter o valor atual.
+6. Para remover um evento, use a opção "Cancelar evento" e informe o id do evento listado.
 
 Formato de data/hora solicitado:
 

@@ -198,6 +198,95 @@ def cancelar_evento() -> bool:
     return True
 
 
+def atualizar_evento() -> dict | None:
+    """Atualiza campos de um evento existente (título, sala, início, fim)."""
+    if not EVENTOS:
+        print("[aviso] Não há eventos para atualizar.")
+        return None
+
+    print("=== Atualizar Evento ===")
+    print("Eventos atuais:")
+    for e in EVENTOS:
+        ini = e.get("inicio")
+        fim = e.get("fim")
+        print(f"- {e['id']}: {e['titulo']} (sala {e['sala_id']}) [{ini} -> {fim}]")
+
+    id_str = input("Digite o id do evento a atualizar: ").strip()
+    try:
+        alvo = int(id_str)
+    except (TypeError, ValueError):
+        print("[erro] O id do evento deve ser um número inteiro.")
+        return None
+
+    ev = next((e for e in EVENTOS if e.get("id") == alvo), None)
+    if ev is None:
+        print(f"[erro] Evento com id {alvo} não encontrado.")
+        return None
+
+    print("Deixe em branco para manter o valor atual.")
+    novo_titulo = input(f"Título [{ev['titulo']}]: ").strip()
+    if not novo_titulo:
+        novo_titulo = ev["titulo"]
+
+    print("Salas disponíveis:")
+    for s in SALAS:
+        print(f"- {s['id']}: {s['nome']} [{s['capacidade']}]")
+    sala_in_str = input(f"Sala id [{ev['sala_id']}]: ").strip()
+    if sala_in_str:
+        try:
+            novo_sala_id = int(sala_in_str)
+        except (TypeError, ValueError):
+            print("[erro] O id da sala deve ser um número inteiro.")
+            return None
+    else:
+        novo_sala_id = ev["sala_id"]
+
+    print("Formato de data/hora: YYYY-MM-DD HH:MM")
+    ini_in = input(f"Início [{ev['inicio']}]: ").strip()
+    fim_in = input(f"Fim [{ev['fim']}]: ").strip()
+    try:
+        novo_inicio = (
+            datetime.strptime(ini_in, "%Y-%m-%d %H:%M") if ini_in else ev["inicio"]
+        )
+        novo_fim = datetime.strptime(fim_in, "%Y-%m-%d %H:%M") if fim_in else ev["fim"]
+    except ValueError:
+        print("[erro] Datas inválidas. Use o formato YYYY-MM-DD HH:MM.")
+        return None
+
+    # Validações
+    if not any(s.get("id") == novo_sala_id for s in SALAS):
+        print("[erro] Sala informada não existe.")
+        return None
+    if not novo_titulo:
+        print("[erro] O título do evento não pode ser vazio.")
+        return None
+    if novo_fim <= novo_inicio:
+        print("[erro] O horário de fim deve ser maior que o de início.")
+        return None
+
+    # Conflitos (ignora o próprio evento)
+    for e in EVENTOS:
+        if e.get("id") == ev["id"]:
+            continue
+        if e.get("sala_id") == novo_sala_id:
+            ei = e.get("inicio")
+            ef = e.get("fim")
+            if not isinstance(ei, datetime) or not isinstance(ef, datetime):
+                continue
+            if not (novo_fim <= ei or novo_inicio >= ef):
+                print("[erro] Conflito de horário para esta sala.")
+                return None
+
+    # Persistir alterações
+    ev["titulo"] = novo_titulo
+    ev["sala_id"] = novo_sala_id
+    ev["inicio"] = novo_inicio
+    ev["fim"] = novo_fim
+
+    print("[ok] Evento atualizado:", ev)
+    return ev
+
+
 def menu():
     """Menu monolítico para escolher operações sobre SALAS."""
     while True:
@@ -208,6 +297,7 @@ def menu():
         print("4) Listar salas")
         print("5) Agendar evento")
         print("6) Cancelar evento")
+        print("7) Atualizar evento")
         print("0) Sair")
         opção = input("Escolha uma opção: ").strip()
 
@@ -223,6 +313,8 @@ def menu():
             criar_evento()
         elif opção == "6":
             cancelar_evento()
+        elif opção == "7":
+            atualizar_evento()
         elif opção == "0":
             print("Saindo...")
             break
