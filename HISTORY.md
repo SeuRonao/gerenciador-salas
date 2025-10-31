@@ -19,3 +19,7 @@ Todas as mudanças significativas neste projeto serão documentadas neste arquiv
 - Atualizado o menu com a opção "Atualizar evento".
 - Adicionada função `listar_eventos()` para listar todos os eventos ordenados.
 - Atualizado o menu com a opção "Listar eventos".
+
+## v0.2.1
+
+- Adicionado `EXERCÍCIOS.md` com duas trilhas de exercícios (melhorias simples e mudanças que evidenciam dificuldades do monólito).
