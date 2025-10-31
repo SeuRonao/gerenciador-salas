@@ -8,7 +8,7 @@ Todas as mudanças significativas neste projeto serão documentadas neste arquiv
 - Atualizado `README.md` com instruções de execução utilizando `uv` (opção recomendada para isolar o ambiente sem dependências externas).
 - Criação/Leitura/Busca/Remoção/Listagem de salas implementado.
 
-## Em desenvolvimento
+## v0.2.0
 
 - Implementado agendamento de eventos em memória com validação de conflitos por sala.
 - Adicionada função `criar_evento()` (fluxo interativo com input/print).
