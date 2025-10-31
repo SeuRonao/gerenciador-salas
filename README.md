@@ -9,6 +9,38 @@ Esse é um projeto para ensinar de forma didática como criar um sistema simples
 - Listagem de salas e eventos
 - Cancelamento de eventos
 
+## Como executar
+
+Pré-requisitos:
+
+- Python 3.13 ou superior (ver `pyproject.toml`)
+- uv instalado (https://docs.astral.sh/uv/)
+
+Comandos:
+
+- Executar diretamente com Python (simples):
+
+```bash
+python main.py
+```
+
+- Executar isolado com uv (recomendado para manter o ambiente limpo):
+
+```bash
+uv run python main.py
+```
+
+Observações:
+
+- Este projeto não possui dependências externas (`dependencies = []`), então o `uv run` apenas garante um ambiente controlado sem precisar criar/ativar venv manualmente.
+- Se preferir um ambiente virtual dedicado, você pode usar:
+
+```bash
+uv venv .venv
+source .venv/bin/activate
+python main.py
+```
+
 ## Observações
 
 O objetivo é ser didático e simples, ideal para iniciantes em programação Python. O código é comentado para facilitar o entendimento.
