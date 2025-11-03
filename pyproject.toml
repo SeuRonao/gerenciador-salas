@@ -5,3 +5,8 @@ description = "Projeto simples para ensino de Python. Gerenciador de Salas é um
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+]
