@@ -23,3 +23,11 @@ Todas as mudanças significativas neste projeto serão documentadas neste arquiv
 ## v0.2.1
 
 - Adicionado `EXERCÍCIOS.md` com duas trilhas de exercícios (melhorias simples e mudanças que evidenciam dificuldades do monólito).
+
+## v0.2.2
+
+- Adicionada suíte extensa de testes com `pytest` em `test/test_main.py` cobrindo:
+- Cadastro, busca, listagem e remoção de salas
+- Agendamento, cancelamento, atualização e listagem de eventos (inclui validações e conflitos)
+- Saída imediata do menu
+- Reset de estado global entre testes via fixture `autouse`
