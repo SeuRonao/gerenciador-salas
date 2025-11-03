@@ -1,3 +1,6 @@
 {
-  "cSpell.words": ["snome", "venv"]
+  "cSpell.words": ["snome", "venv"],
+  "python.testing.pytestArgs": ["test"],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true
 }
