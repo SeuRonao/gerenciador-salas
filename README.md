@@ -20,20 +20,20 @@ Esse é um projeto para ensinar de forma didática como criar um sistema simples
 Pré-requisitos:
 
 - Python 3.13 ou superior (ver `pyproject.toml`)
-- uv instalado (https://docs.astral.sh/uv/)
+- uv instalado [uv](https://docs.astral.sh/uv/)
 
 Comandos:
 
 - Executar diretamente com Python (simples):
 
 ```bash
-python main.py
+python -m src.main
 ```
 
 - Executar isolado com uv (recomendado para manter o ambiente limpo):
 
 ```bash
-uv run python main.py
+uv run python -m src.main
 ```
 
 Observações:
@@ -43,8 +43,9 @@ Observações:
 
 ```bash
 uv venv .venv
-source .venv/bin/activate
-python main.py
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+python -m src.main
 ```
 
 ## Observações

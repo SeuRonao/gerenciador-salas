@@ -1,6 +1,6 @@
 [project]
 name = "gerenciador-salas"
-version = "0.2.2"
+version = "0.2.3"
 description = "Projeto simples para ensino de Python. Gerenciador de Salas é um exemplo que começa com péssimas práticas para mostrar por contraste o motivo de boas práticas de programação."
 readme = "README.md"
 requires-python = ">=3.13"
@@ -10,3 +10,9 @@ dependencies = []
 dev = [
     "pytest>=8.4.2",
 ]
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]
+pythonpath = "src"

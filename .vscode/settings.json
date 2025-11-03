@@ -1,5 +1,14 @@
 {
-  "cSpell.words": ["autouse", "capsys", "snome", "venv"],
+  "cSpell.words": [
+    "addopts",
+    "autouse",
+    "capsys",
+    "importlib",
+    "pytest",
+    "pythonpath",
+    "snome",
+    "venv"
+  ],
   "python.testing.pytestArgs": ["test"],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true

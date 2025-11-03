@@ -31,3 +31,9 @@ Todas as mudanças significativas neste projeto serão documentadas neste arquiv
 - Agendamento, cancelamento, atualização e listagem de eventos (inclui validações e conflitos)
 - Saída imediata do menu
 - Reset de estado global entre testes via fixture `autouse`
+
+## v0.2.3
+
+- Adotado layout `src/`: o arquivo `main.py` foi movido para `src/main.py`.
+- Configuração do `pytest` define `pythonpath = "src"`, permitindo `import main` nos testes sem precisar `import src.main`.
+- Ajustes de documentação: instruções de execução atualizadas para usar `python -m src.main` (ou via `uv`).
