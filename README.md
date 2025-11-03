@@ -57,6 +57,17 @@ O histórico de versões e explicação sobre o que estamos fazendo está dispon
 Inicialmente, o projeto não utiliza banco de dados, como também boas práticas de programação, para manter a simplicidade e o foco no aprendizado dos conceitos básicos.
 Futuramente, podemos evoluir o projeto para incluir essas melhorias e principalmente, mostrar o motivo de ser importante manter o código limpo e organizado.
 
+## Camada de domínio (nova)
+
+Para facilitar a evolução, o núcleo do problema (salas, eventos e alocação) está modelado em `src/domínio/`:
+
+- `modelos.py`: dataclasses `Sala` e `Evento`
+- `regras.py`: funções puras para validar intervalos e detectar conflitos
+- `repositórios.py`: interfaces abstratas (ABCs) para persistência de salas e eventos
+- `serviços.py`: funções de caso de uso (sem I/O) como `cadastrar_sala`, `agendar_evento`, etc.
+
+Essa camada não faz input/print, nem conhece a forma de persistência. O arquivo `src/main.py` continua como um monólito interativo para fins didáticos; em passos seguintes, o menu poderá ser conectado aos serviços do domínio.
+
 ## Como usar (exemplo rápido)
 
 1. Rode o programa e utilize o menu interativo.

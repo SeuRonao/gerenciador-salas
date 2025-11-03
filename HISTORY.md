@@ -37,3 +37,12 @@ Todas as mudanças significativas neste projeto serão documentadas neste arquiv
 - Adotado layout `src/`: o arquivo `main.py` foi movido para `src/main.py`.
 - Configuração do `pytest` define `pythonpath = "src"`, permitindo `import main` nos testes sem precisar `import src.main`.
 - Ajustes de documentação: instruções de execução atualizadas para usar `python -m src.main` (ou via `uv`).
+
+## v0.2.4
+
+- Criada camada de domínio em `src/domínio` contendo:
+  - `modelos.py` (dataclasses `Sala` e `Evento` com validações básicas)
+  - `regras.py` (funções puras de validação e detecção de conflitos de horários)
+  - `repositórios.py` (interfaces abstratas para persistência de salas e eventos)
+  - `serviços.py` (funções de caso de uso sem I/O, usando as interfaces e regras)
+- Sem alterar o fluxo atual da `main.py` (monólito interativo); próxima etapa é conectar o menu às novas funções.
