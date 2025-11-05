@@ -6,6 +6,7 @@
     "dataclasses",
     "importlib",
     "instanciável",
+    "pyproject",
     "pytest",
     "pythonpath",
     "snome",

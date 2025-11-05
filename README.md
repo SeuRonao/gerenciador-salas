@@ -57,16 +57,48 @@ O histórico de versões e explicação sobre o que estamos fazendo está dispon
 Inicialmente, o projeto não utiliza banco de dados, como também boas práticas de programação, para manter a simplicidade e o foco no aprendizado dos conceitos básicos.
 Futuramente, podemos evoluir o projeto para incluir essas melhorias e principalmente, mostrar o motivo de ser importante manter o código limpo e organizado.
 
-## Camada de domínio (nova)
+## Arquitetura atual
 
-Para facilitar a evolução, o núcleo do problema (salas, eventos e alocação) está modelado em `src/domínio/`:
+Para facilitar a evolução, o núcleo do problema (salas, eventos e alocação) está modelado em `src/domínio/` e já há implementações em memória e um container simples:
 
 - `modelos.py`: dataclasses `Sala` e `Evento`
 - `regras.py`: funções puras para validar intervalos e detectar conflitos
 - `repositórios.py`: interfaces abstratas (ABCs) para persistência de salas e eventos
 - `serviços.py`: funções de caso de uso (sem I/O) como `cadastrar_sala`, `agendar_evento`, etc.
 
+Infraestrutura em memória (produção):
+
+- `src/infra/repos_memória.py`: repositórios em memória
+  - `MemSalaRepository`
+  - `MemEventoRepository`
+
+Composição (container):
+
+- `src/app/container.py`:
+  - `criar_container_memória()` cria um container com instâncias independentes dos repositórios em memória.
+
 Essa camada não faz input/print, nem conhece a forma de persistência. O arquivo `src/main.py` continua como um monólito interativo para fins didáticos; em passos seguintes, o menu poderá ser conectado aos serviços do domínio.
+
+Exemplo rápido (programático):
+
+```python
+from app.container import criar_container_memória
+from domínio.serviços import cadastrar_sala, agendar_evento, listar_eventos
+from datetime import datetime
+
+c = criar_container_memória()
+
+s = cadastrar_sala(c.sala_repo, nome="Sala 1", capacidade=10)
+e = agendar_evento(
+    c.evento_repo,
+    c.sala_repo,
+    sala_id=s.id,
+    titulo="Reunião",
+    inicio=datetime(2025, 1, 1, 9, 0),
+    fim=datetime(2025, 1, 1, 10, 0),
+)
+print(listar_eventos(c.evento_repo))
+```
 
 ## Como usar (exemplo rápido)
 
@@ -87,3 +119,18 @@ Regras de agendamento:
 - O título não pode ser vazio.
 - O horário de fim deve ser maior que o de início.
 - Não pode haver sobreposição de horários para a mesma sala.
+
+## Testes
+
+Estrutura:
+
+- Unitários do domínio e infraestrutura: `test/unitário/`
+- Ponta a ponta do menu interativo: `test/ponta_a_ponta/`
+
+Executar a suíte:
+
+```bash
+uv run pytest -q
+```
+
+Observação: o projeto usa layout `src/` (ver `pyproject.toml` com `pythonpath = "src"`).
