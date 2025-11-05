@@ -16,6 +16,6 @@ class Container:
     evento_repo: EventoRepository
 
 
-def criar_container_memoria() -> Container:
+def criar_container_memória() -> Container:
     """Cria um container com repositórios em memória independentes."""
     return Container(sala_repo=MemSalaRepository(), evento_repo=MemEventoRepository())

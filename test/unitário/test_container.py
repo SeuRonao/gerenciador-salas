@@ -3,7 +3,7 @@ from datetime import datetime
 from domínio.modelos import Sala, Evento
 from infra.repos_memória import MemSalaRepository, MemEventoRepository
 
-from app.container import criar_container_memória  # type: ignore
+from app.container import criar_container_memória
 
 
 def dt(hm: str) -> datetime:
