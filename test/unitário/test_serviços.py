@@ -1,6 +1,4 @@
-from __future__ import annotations
 from datetime import datetime
-from typing import List
 
 from domínio.modelos import Sala, Evento
 from domínio.serviços import (
@@ -17,7 +15,7 @@ from domínio.repositórios import SalaRepository, EventoRepository
 
 class MemSalaRepo(SalaRepository):
     def __init__(self) -> None:
-        self._dados: List[Sala] = []
+        self._dados: list[Sala] = []
 
     def proximo_id(self) -> int:
         # simples e determinístico para os testes
@@ -46,7 +44,7 @@ class MemSalaRepo(SalaRepository):
 
 class MemEventoRepo(EventoRepository):
     def __init__(self) -> None:
-        self._dados: List[Evento] = []
+        self._dados: list[Evento] = []
 
     def proximo_id(self) -> int:
         return (self._dados[-1].id + 1) if self._dados else 1
