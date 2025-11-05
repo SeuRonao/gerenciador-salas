@@ -321,7 +321,7 @@ def test_cancelar_evento_sucesso(monkeypatch, capsys):
 # --- atualizar_evento ---
 
 
-def _seed_salas_evento_basico():
+def _seed_salas_evento_básico():
     main.SALAS.extend(
         [
             {"id": 1, "nome": "Sala 1", "capacidade": 5},
@@ -347,7 +347,7 @@ def test_atualizar_evento_sem_eventos(capsys):
 
 
 def test_atualizar_evento_id_invalido(monkeypatch, capsys):
-    _seed_salas_evento_basico()
+    _seed_salas_evento_básico()
     feed_input(monkeypatch, ["x"])  # id inválido
     ev = main.atualizar_evento()
     out = capsys.readouterr().out
@@ -356,7 +356,7 @@ def test_atualizar_evento_id_invalido(monkeypatch, capsys):
 
 
 def test_atualizar_evento_nao_encontrado(monkeypatch, capsys):
-    _seed_salas_evento_basico()
+    _seed_salas_evento_básico()
     feed_input(monkeypatch, ["2"])  # não existe
     ev = main.atualizar_evento()
     out = capsys.readouterr().out
@@ -365,7 +365,7 @@ def test_atualizar_evento_nao_encontrado(monkeypatch, capsys):
 
 
 def test_atualizar_evento_manter_campos_em_branco(monkeypatch, capsys):
-    _seed_salas_evento_basico()
+    _seed_salas_evento_básico()
     # id -> enter -> enter -> enter -> enter
     feed_input(monkeypatch, ["1", "", "", "", ""])
     ev = main.atualizar_evento()
@@ -381,7 +381,7 @@ def test_atualizar_evento_manter_campos_em_branco(monkeypatch, capsys):
 
 
 def test_atualizar_evento_sala_inexistente(monkeypatch, capsys):
-    _seed_salas_evento_basico()
+    _seed_salas_evento_básico()
     feed_input(
         monkeypatch,
         [
@@ -399,7 +399,7 @@ def test_atualizar_evento_sala_inexistente(monkeypatch, capsys):
 
 
 def test_atualizar_evento_datas_invalidas(monkeypatch, capsys):
-    _seed_salas_evento_basico()
+    _seed_salas_evento_básico()
     feed_input(monkeypatch, ["1", "", "", "bad", "bad"])  # datas inválidas
     ev = main.atualizar_evento()
     out = capsys.readouterr().out
@@ -408,7 +408,7 @@ def test_atualizar_evento_datas_invalidas(monkeypatch, capsys):
 
 
 def test_atualizar_evento_fim_antes_inicio(monkeypatch, capsys):
-    _seed_salas_evento_basico()
+    _seed_salas_evento_básico()
     feed_input(
         monkeypatch,
         [
@@ -426,7 +426,7 @@ def test_atualizar_evento_fim_antes_inicio(monkeypatch, capsys):
 
 
 def test_atualizar_evento_conflito(monkeypatch, capsys):
-    _seed_salas_evento_basico()
+    _seed_salas_evento_básico()
     # Outro evento na mesma sala 10:30-11:30
     main.EVENTOS.append(
         {
@@ -455,7 +455,7 @@ def test_atualizar_evento_conflito(monkeypatch, capsys):
 
 
 def test_atualizar_evento_sucesso_alterando_tudo(monkeypatch, capsys):
-    _seed_salas_evento_basico()
+    _seed_salas_evento_básico()
     # Atualiza para sala 2, novo título e novo horário
     feed_input(
         monkeypatch,
@@ -486,7 +486,7 @@ def test_listar_eventos_sem_eventos(capsys):
     assert "Não há eventos cadastrados" in out
 
 
-def test_listar_eventos_ordenacao_e_nomes(capsys):
+def test_listar_eventos_ordenação_e_nomes(capsys):
     main.SALAS.extend(
         [
             {"id": 1, "nome": "Sala 1", "capacidade": 5},

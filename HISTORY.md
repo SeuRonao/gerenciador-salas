@@ -41,8 +41,15 @@ Todas as mudanças significativas neste projeto serão documentadas neste arquiv
 ## v0.2.4
 
 - Criada camada de domínio em `src/domínio` contendo:
-  - `modelos.py` (dataclasses `Sala` e `Evento` com validações básicas)
+  - `modelos.py` (_dataclasses_ `Sala` e `Evento` com validações básicas)
   - `regras.py` (funções puras de validação e detecção de conflitos de horários)
   - `repositórios.py` (interfaces abstratas para persistência de salas e eventos)
   - `serviços.py` (funções de caso de uso sem I/O, usando as interfaces e regras)
 - Sem alterar o fluxo atual da `main.py` (monólito interativo); próxima etapa é conectar o menu às novas funções.
+
+## v0.2.5
+
+- Reorganização dos testes:
+  - Testes de ponta a ponta do fluxo interativo movidos para `test/ponta_a_ponta/test_main.py`.
+  - Nova suíte de testes unitários em `test/unitário/` cobrindo o domínio (`modelos.py`, `regras.py`, `repositórios.py`, `serviços.py`).
+  - Ajustes menores para compatibilidade de tipagem nos testes (sem alterar código de produção).
