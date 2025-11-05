@@ -53,3 +53,13 @@ Todas as mudanças significativas neste projeto serão documentadas neste arquiv
   - Testes de ponta a ponta do fluxo interativo movidos para `test/ponta_a_ponta/test_main.py`.
   - Nova suíte de testes unitários em `test/unitário/` cobrindo o domínio (`modelos.py`, `regras.py`, `repositórios.py`, `serviços.py`).
   - Ajustes menores para compatibilidade de tipagem nos testes (sem alterar código de produção).
+
+## v0.2.6
+
+- Adicionados repositórios em memória de produção em `src/infra/repos_memória.py`:
+  - `MemSalaRepository` e `MemEventoRepository`, com operações básicas de CRUD, `proximo_id()` sequencial
+    e retorno de cópias em `listar`/`listar_por_sala` para evitar mutação externa do estado interno.
+- Adicionados testes unitários dedicados em `test/unitário/test_infra_repos_memória.py` cobrindo
+  adicionar, listar, obter_por_id, atualizar, remover, `listar_por_sala` e comportamento de `proximo_id()`.
+- Nenhuma alteração no `src/main.py`; este passo prepara o terreno para conectar o menu aos serviços do domínio
+  via um container simples de composição em passos seguintes.

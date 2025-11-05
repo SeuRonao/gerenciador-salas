@@ -1,6 +1,6 @@
 [project]
 name = "gerenciador-salas"
-version = "0.2.5"
+version = "0.2.6"
 description = "Projeto simples para ensino de Python. Gerenciador de Salas é um exemplo que começa com péssimas práticas para mostrar por contraste o motivo de boas práticas de programação."
 readme = "README.md"
 requires-python = ">=3.13"
