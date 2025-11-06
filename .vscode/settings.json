@@ -3,6 +3,7 @@
     "addopts",
     "autouse",
     "capsys",
+    "conftest",
     "dataclasses",
     "importlib",
     "instanciável",

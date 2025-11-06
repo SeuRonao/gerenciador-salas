@@ -13,7 +13,7 @@ wheels = [
 
 [[package]]
 name = "gerenciador-salas"
-version = "0.2.6"
+version = "0.2.7"
 source = { virtual = "." }
 
 [package.dev-dependencies]

@@ -79,7 +79,20 @@ Composição (container):
 
 Essa camada não faz input/print, nem conhece a forma de persistência. O arquivo `src/main.py` continua como um monólito interativo para fins didáticos; em passos seguintes, o menu poderá ser conectado aos serviços do domínio.
 
-Exemplo rápido (programático):
+Façade de aplicação (UI -> domínio, sem I/O):
+
+- `src/app/fachada.py`:
+  - `cadastrar_sala_ui`, `agendar_evento_ui`, `cancelar_evento_ui`, `atualizar_evento_ui`, `listar_salas_ui`, `listar_eventos_ui`
+  - Converte entradas de UI (strings) para tipos do domínio e retorna estruturas simples (objetos do domínio ou dicts/booleans)
+
+Main integrado ao domínio (migração incremental):
+
+- `src/main.py` foi adaptado para usar os serviços do domínio por meio de adaptadores internos de repositório que escrevem
+  nas listas globais `SALAS`/`EVENTOS` (compatível com os testes E2E atuais):
+  - Salas: cadastrar, listar, remover, buscar por id
+  - Eventos: agendar, cancelar, atualizar, listar
+
+Exemplo rápido (programático com container + serviços):
 
 ```python
 from app.container import criar_container_memória
@@ -98,6 +111,19 @@ e = agendar_evento(
     fim=datetime(2025, 1, 1, 10, 0),
 )
 print(listar_eventos(c.evento_repo))
+```
+
+Exemplo rápido (programático com fachada):
+
+```python
+from app.container import criar_container_memória
+from app import fachada
+
+c = criar_container_memória()
+ok, sala_ou_erro = fachada.cadastrar_sala_ui(c, "Sala 1", "10")
+ok, evt_ou_erro = fachada.agendar_evento_ui(c, "1", "Daily", "2025-01-01 09:00", "2025-01-01 09:15")
+salas = fachada.listar_salas_ui(c)
+eventos = fachada.listar_eventos_ui(c)
 ```
 
 ## Como usar (exemplo rápido)
@@ -125,6 +151,7 @@ Regras de agendamento:
 Estrutura:
 
 - Unitários do domínio e infraestrutura: `test/unitário/`
+- Fixture compartilhada: `test/unitário/conftest.py` fornece `container_memoria`
 - Ponta a ponta do menu interativo: `test/ponta_a_ponta/`
 
 Executar a suíte:

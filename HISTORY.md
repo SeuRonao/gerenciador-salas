@@ -63,3 +63,18 @@ Todas as mudanças significativas neste projeto serão documentadas neste arquiv
   adicionar, listar, obter_por_id, atualizar, remover, `listar_por_sala` e comportamento de `proximo_id()`.
 - Nenhuma alteração no `src/main.py`; este passo prepara o terreno para conectar o menu aos serviços do domínio
   via um container simples de composição em passos seguintes.
+
+## v0.2.7
+
+- Adicionado container de composição em `src/app/container.py` com a função `criar_container_memória()`.
+- Adicionados testes do container em `test/unitário/test_container.py` garantindo tipos corretos, isolamento por instância
+  e comportamento determinístico de `proximo_id()`.
+- Adicionada fixture `container_memoria` em `test/unitário/conftest.py` para simplificar os testes.
+- Adicionada façade de aplicação em `src/app/fachada.py` (sem I/O) com funções de alto nível para UI:
+  `cadastrar_sala_ui`, `agendar_evento_ui`, `cancelar_evento_ui`, `atualizar_evento_ui`, `listar_salas_ui`, `listar_eventos_ui`.
+- Adicionados testes da fachada em `test/unitário/test_fachada.py` cobrindo parsing, mensagens e integração com o domínio.
+- Primeira migração incremental do `src/main.py` para usar o domínio (DDD) via adaptadores internos de repositório:
+  - Salas: cadastrar, listar, remover, buscar por id
+  - Eventos: agendar, cancelar, atualizar, listar
+- Mantida compatibilidade com testes E2E e estado global (`SALAS`/`EVENTOS`), preparando terreno para futura remoção dos globais
+  e uso direto do container.
