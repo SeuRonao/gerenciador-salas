@@ -2,8 +2,7 @@ from datetime import datetime
 
 from domínio.modelos import Sala, Evento
 
-# testes TDD: o módulo app.fachada não existe ainda e os imports devem falhar
-from app import fachada  # type: ignore
+from app import fachada
 
 
 def dt(hm: str) -> datetime:
