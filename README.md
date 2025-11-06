@@ -85,10 +85,10 @@ Façade de aplicação (UI -> domínio, sem I/O):
   - `cadastrar_sala_ui`, `agendar_evento_ui`, `cancelar_evento_ui`, `atualizar_evento_ui`, `listar_salas_ui`, `listar_eventos_ui`
   - Converte entradas de UI (strings) para tipos do domínio e retorna estruturas simples (objetos do domínio ou dicts/booleans)
 
-Main integrado ao domínio (migração incremental):
+Main integrado ao domínio (sem globais):
 
-- `src/main.py` foi adaptado para usar os serviços do domínio por meio de adaptadores internos de repositório que escrevem
-  nas listas globais `SALAS`/`EVENTOS` (compatível com os testes E2E atuais):
+- `src/main.py` usa diretamente o container de repositórios em memória (`criar_container_memória()`),
+  sem variáveis globais de dados. Todos os fluxos interativos (input/print) foram preservados:
   - Salas: cadastrar, listar, remover, buscar por id
   - Eventos: agendar, cancelar, atualizar, listar
 

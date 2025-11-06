@@ -7,6 +7,7 @@ from typing import Any, Tuple
 from domínio.serviços import (
     cadastrar_sala as _cadastrar_sala,
     listar_salas as _listar_salas,
+    remover_sala as _remover_sala,
     agendar_evento as _agendar_evento,
     cancelar_evento as _cancelar_evento,
     atualizar_evento as _atualizar_evento,
@@ -55,6 +56,21 @@ def listar_salas_ui(container: Container) -> list[dict]:
     salas = _listar_salas(container.sala_repo)
     # retorna estruturas simples (dict) para UI
     return [asdict(s) for s in salas]
+
+
+def remover_sala_ui(container: Container, sala_id_str: str) -> tuple[bool, Any]:
+    """Remove uma sala pelo id informado como string.
+
+    Retorna (True, None) em caso de sucesso, ou (False, mensagem) em erro.
+    """
+    sala_id = _parse_int(sala_id_str)
+    if sala_id is None or sala_id <= 0:
+        return False, "id da sala inválido"
+
+    ok = _remover_sala(container.sala_repo, sala_id)
+    if ok:
+        return True, None
+    return False, "sala não encontrada"
 
 
 # ------------------------------
@@ -174,3 +190,17 @@ def listar_eventos_ui(container: Container) -> list[dict]:
         }
         for e in eventos
     ]
+
+
+def buscar_sala_por_id_ui(container: Container, sala_id_str: str) -> tuple[bool, Any]:
+    """Obtém uma sala por id informado como string.
+
+    Retorna (True, Sala) se encontrada, ou (False, mensagem) em caso de erro.
+    """
+    sala_id = _parse_int(sala_id_str)
+    if sala_id is None or sala_id <= 0:
+        return False, "id da sala inválido"
+    s = container.sala_repo.obter_por_id(sala_id)
+    if s is None:
+        return False, "sala não encontrada"
+    return True, s

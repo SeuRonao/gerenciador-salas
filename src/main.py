@@ -5,11 +5,8 @@ from domínio.repositórios import (
     SalaRepository as _SalaRepository,
     EventoRepository as _EventoRepository,
 )
-from domínio.serviços import (
-    cadastrar_sala as _srv_cadastrar_sala,
-    agendar_evento as _srv_agendar_evento,
-)
 from app.container import criar_container_memória as _criar_container_memória
+from app import fachada as _fachada
 
 # Container de repositórios em memória. Ao recarregar o módulo (usado nos testes),
 # o estado é isolado automaticamente, substituindo as antigas listas globais.
@@ -36,14 +33,13 @@ def cadastrar_sala() -> dict | None:
         print("[erro] Capacidade deve ser maior que zero.")
         return None
 
-    # Usa o serviço de domínio com o repositório do container em memória
-    repo: _SalaRepository = _container.sala_repo
-    criada = _srv_cadastrar_sala(repo, nome, capacidade)
-    if criada is None:
-        # Em teoria, não deve ocorrer pois já validamos entrada; fallback seguro.
+    # Encaminha via fachada (UI -> domínio), preservando mensagens/retorno
+    ok, result = _fachada.cadastrar_sala_ui(_container, nome, str(capacidade))
+    if not ok:
         print("[erro] Dados inválidos para cadastro da sala.")
         return None
 
+    criada = result  # entidade de domínio Sala
     sala = {"id": criada.id, "nome": criada.nome, "capacidade": criada.capacidade}
     print("[ok] Sala criada:", sala)
     return sala
@@ -67,28 +63,33 @@ def remover_sala() -> bool:
         print(f"- {s.id}: {s.nome} [{s.capacidade}]")
 
     id_str = input("Digite o id da sala a remover: ").strip()
+    # Procura a sala antes para imprimir se remoção for bem-sucedida
+    alvo_int = None
     try:
-        alvo = int(id_str)
+        alvo_int = int(id_str)
     except (TypeError, ValueError):
-        print("[erro] O id deve ser um número inteiro.")
-        return False
+        pass
+    s = repo.obter_por_id(alvo_int) if isinstance(alvo_int, int) else None
 
-    # Procura a sala pelo id (para manter a impressão do dict removido)
-    s = repo.obter_por_id(alvo)
-    if s is None:
-        print(f"[erro] Sala com id {alvo} não encontrada.")
-        return False
-
-    # Usa o serviço de domínio para efetivar a remoção preservando SALAS
-    from domínio.serviços import remover_sala as _srv_remover_sala
-
-    ok = _srv_remover_sala(repo, alvo)
+    ok, result = _fachada.remover_sala_ui(_container, id_str)
     if not ok:
-        # fallback: algo mudou no meio do caminho
-        print(f"[erro] Sala com id {alvo} não encontrada.")
+        msg = str(result)
+        if msg == "id da sala inválido":
+            print("[erro] O id deve ser um número inteiro.")
+        else:
+            # tenta usar o valor numérico se possível para manter a mensagem
+            try:
+                alvo_num = int(id_str)
+            except Exception:
+                alvo_num = id_str
+            print(f"[erro] Sala com id {alvo_num} não encontrada.")
         return False
 
-    removida = {"id": s.id, "nome": s.nome, "capacidade": s.capacidade}
+    removida = (
+        {"id": s.id, "nome": s.nome, "capacidade": s.capacidade}
+        if s is not None
+        else {"id": int(id_str)}
+    )
     print("[ok] Sala removida:", removida)
     return True
 
@@ -102,17 +103,21 @@ def buscar_sala_por_id() -> dict | None:
 
     print("=== Buscar Sala por ID ===")
     id_str = input("Digite o id da sala para buscar: ").strip()
-    try:
-        alvo = int(id_str)
-    except (TypeError, ValueError):
-        print("[erro] O id deve ser um número inteiro.")
+    ok, result = _fachada.buscar_sala_por_id_ui(_container, id_str)
+    if not ok:
+        msg = str(result)
+        if msg == "id da sala inválido":
+            print("[erro] O id deve ser um número inteiro.")
+        else:
+            # para a mensagem, tenta normalizar para inteiro
+            try:
+                alvo_num = int(id_str)
+            except Exception:
+                alvo_num = id_str
+            print(f"[erro] Sala com id {alvo_num} não encontrada.")
         return None
 
-    s = repo.obter_por_id(alvo)
-    if s is None:
-        print(f"[erro] Sala com id {alvo} não encontrada.")
-        return None
-
+    s = result
     sala_dict = {"id": s.id, "nome": s.nome, "capacidade": s.capacidade}
     print("[ok] Sala encontrada:", sala_dict)
     return sala_dict
@@ -121,22 +126,17 @@ def buscar_sala_por_id() -> dict | None:
 def listar_salas() -> None:
     """Lista todas as salas cadastradas em SALAS."""
     print("=== Listar Salas ===")
-    repo: _SalaRepository = _container.sala_repo
-    if not repo.listar():
+    itens = _fachada.listar_salas_ui(_container)
+    if not itens:
         print("[aviso] Não há salas cadastradas.")
         return
-    # Usa o serviço de domínio para obter a lista ordenada, preservando a impressão antiga
-    from domínio.serviços import listar_salas as _srv_listar_salas
-
-    salas = _srv_listar_salas(repo)
-    for s in salas:
-        print(f"- {s.id}: {s.nome} [{s.capacidade}]")
+    for s in itens:
+        print(f"- {s['id']}: {s['nome']} [{s['capacidade']}]")
 
 
 def criar_evento() -> dict | None:
     """Fluxo interativo para criar (agendar) um evento na variável global EVENTOS."""
     repo_salas: _SalaRepository = _container.sala_repo
-    repo_eventos: _EventoRepository = _container.evento_repo
     if not repo_salas.listar():
         print(
             "[aviso] Não há salas cadastradas. Cadastre uma sala antes de agendar eventos."
@@ -149,8 +149,9 @@ def criar_evento() -> dict | None:
         print(f"- {s.id}: {s.nome} [{s.capacidade}]")
 
     sala_id_str = input("Digite o id da sala: ").strip()
+    # Validação antecipada para manter sequência de prompts dos testes
     try:
-        sala_id = int(sala_id_str)
+        int(sala_id_str)
     except (TypeError, ValueError):
         print("[erro] O id da sala deve ser um número inteiro.")
         return None
@@ -163,37 +164,37 @@ def criar_evento() -> dict | None:
     print("Formato de data/hora: YYYY-MM-DD HH:MM (ex.: 2025-10-31 14:30)")
     inicio_str = input("Início: ").strip()
     fim_str = input("Fim: ").strip()
+    # Validação de parsing de datas para manter mensagens
     try:
-        inicio = datetime.strptime(inicio_str, "%Y-%m-%d %H:%M")
-        fim = datetime.strptime(fim_str, "%Y-%m-%d %H:%M")
+        datetime.strptime(inicio_str, "%Y-%m-%d %H:%M")
+        datetime.strptime(fim_str, "%Y-%m-%d %H:%M")
     except ValueError:
         print("[erro] Datas inválidas. Use o formato YYYY-MM-DD HH:MM.")
         return None
 
-    # Validações básicas (agora dentro da função única)
-    if repo_salas.obter_por_id(sala_id) is None:
-        print("[erro] Sala informada não existe.")
-        return None
-    if fim <= inicio:
-        print("[erro] O horário de fim deve ser maior que o de início.")
-        return None
-
-    # Checa conflitos na mesma sala
-    for e in repo_eventos.listar_por_sala(sala_id):
-        ei = e.inicio
-        ef = e.fim
-        # Conflito se houver sobreposição dos intervalos
-        if not (fim <= ei or inicio >= ef):
+    ok, result = _fachada.agendar_evento_ui(
+        _container, sala_id_str, titulo, inicio_str, fim_str
+    )
+    if not ok:
+        msg = str(result)
+        # Mapeia mensagens da fachada para as mensagens legadas do main
+        if msg == "id da sala inválido":
+            print("[erro] O id da sala deve ser um número inteiro.")
+        elif msg.startswith("formato de data inválido"):
+            print("[erro] Datas inválidas. Use o formato YYYY-MM-DD HH:MM.")
+        elif msg == "sala não existe":
+            print("[erro] Sala informada não existe.")
+        elif msg == "título inválido":
+            print("[erro] O título do evento não pode ser vazio.")
+        elif msg == "intervalo de datas inválido":
+            print("[erro] O horário de fim deve ser maior que o de início.")
+        elif msg == "conflito de horário":
             print("[erro] Conflito de horário para esta sala.")
-            return None
-
-    # Usa o serviço de domínio para efetivar o agendamento preservando EVENTOS
-    ev = _srv_agendar_evento(repo_eventos, repo_salas, sala_id, titulo, inicio, fim)
-    if ev is None:
-        # Fallback genérico: não deveria ocorrer pois validamos antes
-        print("[erro] Não foi possível agendar o evento.")
+        else:
+            print("[erro] Não foi possível agendar o evento.")
         return None
 
+    ev = result
     evento = {
         "id": ev.id,
         "sala_id": ev.sala_id,
@@ -220,33 +221,34 @@ def cancelar_evento() -> bool:
         print(f"- {e.id}: {e.titulo} (sala {e.sala_id}) [{ini} -> {fim}]")
 
     id_str = input("Digite o id do evento a cancelar: ").strip()
+    # Captura o evento para impressão caso a remoção ocorra (se id válido)
+    alvo = None
     try:
         alvo = int(id_str)
     except (TypeError, ValueError):
-        print("[erro] O id do evento deve ser um número inteiro.")
-        return False
+        pass
+    e = repo_eventos.obter_por_id(alvo) if isinstance(alvo, int) else None
 
-    # Captura o evento para impressão caso a remoção ocorra
-    e = repo_eventos.obter_por_id(alvo)
-    if e is None:
-        print(f"[erro] Evento com id {alvo} não encontrado.")
-        return False
-
-    # Usa o serviço de domínio para efetivar a remoção preservando EVENTOS
-    from domínio.serviços import cancelar_evento as _srv_cancelar_evento
-
-    ok = _srv_cancelar_evento(repo_eventos, alvo)
+    ok, result = _fachada.cancelar_evento_ui(_container, id_str)
     if not ok:
-        print(f"[erro] Evento com id {alvo} não encontrado.")
+        msg = str(result)
+        if msg == "id do evento inválido":
+            print("[erro] O id do evento deve ser um número inteiro.")
+        else:
+            print(f"[erro] Evento com id {id_str} não encontrado.")
         return False
 
-    removido = {
-        "id": e.id,
-        "sala_id": e.sala_id,
-        "titulo": e.titulo,
-        "inicio": e.inicio,
-        "fim": e.fim,
-    }
+    removido = (
+        {
+            "id": e.id,
+            "sala_id": e.sala_id,
+            "titulo": e.titulo,
+            "inicio": e.inicio,
+            "fim": e.fim,
+        }
+        if e is not None
+        else {"id": int(id_str)}
+    )
     print("[ok] Evento cancelado:", removido)
     return True
 
@@ -361,23 +363,20 @@ def atualizar_evento() -> dict | None:
 def listar_eventos() -> None:
     """Lista todos os eventos cadastrados."""
     print("=== Listar Eventos ===")
-    repo_eventos: _EventoRepository = _container.evento_repo
     repo_salas: _SalaRepository = _container.sala_repo
-    if not repo_eventos.listar():
+    itens = _fachada.listar_eventos_ui(_container)
+    if not itens:
         print("[aviso] Não há eventos cadastrados.")
         return
 
-    # Usa os serviços de domínio para a ordenação, preservando o formato de saída
-    from domínio.serviços import listar_eventos as _srv_listar_eventos
-
+    # Mantém a impressão anterior incluindo o nome da sala
     mapa_salas = {s.id: s.nome for s in repo_salas.listar()}
-    eventos = _srv_listar_eventos(repo_eventos)
-    for e in eventos:
-        sid = e.sala_id
+    for e in itens:
+        sid = e["sala_id"]
         snome = mapa_salas.get(sid, "(desconhecida)")
-        ini = e.inicio
-        fim = e.fim
-        print(f"- {e.id}: {e.titulo} (sala {sid} - {snome}) [{ini} -> {fim}]")
+        ini = e["inicio"]
+        fim = e["fim"]
+        print(f"- {e['id']}: {e['titulo']} (sala {sid} - {snome}) [{ini} -> {fim}]")
 
 
 def menu():
