@@ -111,13 +111,22 @@ def remover_sala() -> bool:
         print("[erro] O id deve ser um número inteiro.")
         return False
 
-    # Procura a sala pelo id
-    idx = next((i for i, s in enumerate(SALAS) if s["id"] == alvo), -1)
-    if idx == -1:
+    # Procura a sala pelo id (para manter a impressão do dict removido)
+    removida = next((s for s in SALAS if s["id"] == alvo), None)
+    if removida is None:
         print(f"[erro] Sala com id {alvo} não encontrada.")
         return False
 
-    removida = SALAS.pop(idx)
+    # Usa o serviço de domínio para efetivar a remoção preservando SALAS
+    from domínio.serviços import remover_sala as _srv_remover_sala
+
+    repo = _SalaRepoDoMain()
+    ok = _srv_remover_sala(repo, alvo)
+    if not ok:
+        # fallback: algo mudou no meio do caminho
+        print(f"[erro] Sala com id {alvo} não encontrada.")
+        return False
+
     print("[ok] Sala removida:", removida)
     return True
 
