@@ -78,3 +78,11 @@ Todas as mudanças significativas neste projeto serão documentadas neste arquiv
   - Eventos: agendar, cancelar, atualizar, listar
 - Mantida compatibilidade com testes E2E e estado global (`SALAS`/`EVENTOS`), preparando terreno para futura remoção dos globais
   e uso direto do container.
+
+## v0.2.8
+
+- Remoção das variáveis globais `SALAS` e `EVENTOS` de `src/main.py`.
+- `main.py` agora usa diretamente o container de repositórios em memória (`criar_container_memória()`),
+  eliminando os adaptadores de repositório baseados em listas globais.
+- Mantidos os fluxos interativos e mensagens originais (I/O), com mesmas saídas e formatos dos dicionários retornados.
+- Testes de ponta a ponta foram previamente ajustados para não depender dos globais, garantindo isolamento via `importlib.reload(main)`.
