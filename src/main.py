@@ -151,8 +151,13 @@ def listar_salas() -> None:
     if not SALAS:
         print("[aviso] Não há salas cadastradas.")
         return
-    for s in SALAS:
-        print(f"- {s['id']}: {s['nome']} [{s['capacidade']}]")
+    # Usa o serviço de domínio para obter a lista ordenada, preservando a impressão antiga
+    repo = _SalaRepoDoMain()
+    from domínio.serviços import listar_salas as _srv_listar_salas
+
+    salas = _srv_listar_salas(repo)
+    for s in salas:
+        print(f"- {s.id}: {s.nome} [{s.capacidade}]")
 
 
 def criar_evento() -> dict | None:
