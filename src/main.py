@@ -1,8 +1,56 @@
 from datetime import datetime
 
+# Integração incremental com a camada de domínio (DDD)
+# Para iniciar a migração mantendo compatibilidade com os testes E2E
+# (que dependem das listas globais SALAS/EVENTOS), o cadastro de sala
+# passará a usar o serviço de domínio através de um repositório "adapter"
+# que escreve/consulta diretamente nessas listas globais.
+from domínio.modelos import Sala as _Sala
+from domínio.repositórios import SalaRepository as _SalaRepository
+from domínio.serviços import cadastrar_sala as _srv_cadastrar_sala
+
 
 SALAS: list[dict] = []
 EVENTOS: list[dict] = []
+
+
+class _SalaRepoDoMain(_SalaRepository):
+    """Adapter de repositório que persiste nas listas globais do main.
+
+    Objetivo: permitir usar os serviços do domínio sem quebrar os testes
+    existentes que verificam `main.SALAS` diretamente.
+    """
+
+    def proximo_id(self) -> int:
+        return (SALAS[-1]["id"] + 1) if SALAS else 1
+
+    def adicionar(self, sala: _Sala) -> _Sala:
+        SALAS.append({"id": sala.id, "nome": sala.nome, "capacidade": sala.capacidade})
+        return sala
+
+    def obter_por_id(self, sala_id: int) -> _Sala | None:
+        s = next((s for s in SALAS if s["id"] == sala_id), None)
+        if s is None:
+            return None
+        return _Sala(id=s["id"], nome=s["nome"], capacidade=s["capacidade"])
+
+    def listar(self) -> list[_Sala]:
+        return [
+            _Sala(id=s["id"], nome=s["nome"], capacidade=s["capacidade"]) for s in SALAS
+        ]
+
+    def remover(self, sala_id: int) -> bool:
+        antes = len(SALAS)
+        # mantém comportamento do main (opera em dicts)
+        restantes = [s for s in SALAS if s["id"] != sala_id]
+        SALAS.clear()
+        SALAS.extend(restantes)
+        return len(SALAS) < antes
+
+    def atualizar(self, sala: _Sala) -> _Sala:
+        self.remover(sala.id)
+        self.adicionar(sala)
+        return sala
 
 
 def cadastrar_sala() -> dict | None:
@@ -25,9 +73,17 @@ def cadastrar_sala() -> dict | None:
         print("[erro] Capacidade deve ser maior que zero.")
         return None
 
-    novo_id = (SALAS[-1]["id"] + 1) if SALAS else 1
-    sala = {"id": novo_id, "nome": nome, "capacidade": capacidade}
-    SALAS.append(sala)
+    # Agora usamos o serviço de domínio, mas preservamos o estado em SALAS
+    # por meio do adaptador `_SalaRepoDoMain`.
+    repo = _SalaRepoDoMain()
+    criada = _srv_cadastrar_sala(repo, nome, capacidade)
+    if criada is None:
+        # Em teoria, não deve ocorrer pois já validamos entrada; fallback seguro.
+        print("[erro] Dados inválidos para cadastro da sala.")
+        return None
+
+    sala = {"id": criada.id, "nome": criada.nome, "capacidade": criada.capacidade}
+    # O repo já inseriu em SALAS; garantimos retorno/print no formato antigo
     print("[ok] Sala criada:", sala)
     return sala
 
