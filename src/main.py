@@ -145,13 +145,16 @@ def buscar_sala_por_id() -> dict | None:
         print("[erro] O id deve ser um número inteiro.")
         return None
 
-    sala = next((s for s in SALAS if s["id"] == alvo), None)
-    if sala is None:
+    # Usa o repositório adaptador para consultar pelo domínio
+    repo = _SalaRepoDoMain()
+    s = repo.obter_por_id(alvo)
+    if s is None:
         print(f"[erro] Sala com id {alvo} não encontrada.")
         return None
 
-    print("[ok] Sala encontrada:", sala)
-    return sala
+    sala_dict = {"id": s.id, "nome": s.nome, "capacidade": s.capacidade}
+    print("[ok] Sala encontrada:", sala_dict)
+    return sala_dict
 
 
 def listar_salas() -> None:
