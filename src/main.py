@@ -5,9 +5,15 @@ from datetime import datetime
 # (que dependem das listas globais SALAS/EVENTOS), o cadastro de sala
 # passará a usar o serviço de domínio através de um repositório "adapter"
 # que escreve/consulta diretamente nessas listas globais.
-from domínio.modelos import Sala as _Sala
-from domínio.repositórios import SalaRepository as _SalaRepository
-from domínio.serviços import cadastrar_sala as _srv_cadastrar_sala
+from domínio.modelos import Sala as _Sala, Evento as _Evento
+from domínio.repositórios import (
+    SalaRepository as _SalaRepository,
+    EventoRepository as _EventoRepository,
+)
+from domínio.serviços import (
+    cadastrar_sala as _srv_cadastrar_sala,
+    agendar_evento as _srv_agendar_evento,
+)
 
 
 SALAS: list[dict] = []
@@ -51,6 +57,74 @@ class _SalaRepoDoMain(_SalaRepository):
         self.remover(sala.id)
         self.adicionar(sala)
         return sala
+
+
+class _EventoRepoDoMain(_EventoRepository):
+    """Adapter de repositório para eventos usando a lista global EVENTOS."""
+
+    def proximo_id(self) -> int:
+        return (EVENTOS[-1]["id"] + 1) if EVENTOS else 1
+
+    def adicionar(self, evento: _Evento) -> _Evento:
+        EVENTOS.append(
+            {
+                "id": evento.id,
+                "sala_id": evento.sala_id,
+                "titulo": evento.titulo,
+                "inicio": evento.inicio,
+                "fim": evento.fim,
+            }
+        )
+        return evento
+
+    def atualizar(self, evento: _Evento) -> _Evento:
+        self.remover(evento.id)
+        self.adicionar(evento)
+        return evento
+
+    def remover(self, evento_id: int) -> bool:
+        antes = len(EVENTOS)
+        restantes = [e for e in EVENTOS if e.get("id") != evento_id]
+        EVENTOS.clear()
+        EVENTOS.extend(restantes)
+        return len(EVENTOS) < antes
+
+    def obter_por_id(self, evento_id: int) -> _Evento | None:
+        e = next((e for e in EVENTOS if e.get("id") == evento_id), None)
+        if e is None:
+            return None
+        return _Evento(
+            id=e["id"],
+            sala_id=e["sala_id"],
+            titulo=e["titulo"],
+            inicio=e["inicio"],
+            fim=e["fim"],
+        )
+
+    def listar(self) -> list[_Evento]:
+        return [
+            _Evento(
+                id=e["id"],
+                sala_id=e["sala_id"],
+                titulo=e["titulo"],
+                inicio=e["inicio"],
+                fim=e["fim"],
+            )
+            for e in EVENTOS
+        ]
+
+    def listar_por_sala(self, sala_id: int) -> list[_Evento]:
+        return [
+            _Evento(
+                id=e["id"],
+                sala_id=e["sala_id"],
+                titulo=e["titulo"],
+                inicio=e["inicio"],
+                fim=e["fim"],
+            )
+            for e in EVENTOS
+            if e.get("sala_id") == sala_id
+        ]
 
 
 def cadastrar_sala() -> dict | None:
@@ -228,15 +302,23 @@ def criar_evento() -> dict | None:
                 print("[erro] Conflito de horário para esta sala.")
                 return None
 
-    novo_id = (EVENTOS[-1]["id"] + 1) if EVENTOS else 1
+    # Usa o serviço de domínio para efetivar o agendamento preservando EVENTOS
+    repo_eventos = _EventoRepoDoMain()
+    repo_salas = _SalaRepoDoMain()
+    ev = _srv_agendar_evento(repo_eventos, repo_salas, sala_id, titulo, inicio, fim)
+    if ev is None:
+        # Fallback genérico: não deveria ocorrer pois validamos antes
+        print("[erro] Não foi possível agendar o evento.")
+        return None
+
     evento = {
-        "id": novo_id,
-        "sala_id": sala_id,
-        "titulo": titulo,
-        "inicio": inicio,
-        "fim": fim,
+        "id": ev.id,
+        "sala_id": ev.sala_id,
+        "titulo": ev.titulo,
+        "inicio": ev.inicio,
+        "fim": ev.fim,
     }
-    EVENTOS.append(evento)
+    # O repositório já inseriu em EVENTOS; mantemos o print/retorno no formato antigo
     print("[ok] Evento agendado:", evento)
     return evento
 
@@ -261,12 +343,21 @@ def cancelar_evento() -> bool:
         print("[erro] O id do evento deve ser um número inteiro.")
         return False
 
-    idx = next((i for i, e in enumerate(EVENTOS) if e.get("id") == alvo), -1)
-    if idx == -1:
+    # Captura o evento para impressão caso a remoção ocorra
+    removido = next((e for e in EVENTOS if e.get("id") == alvo), None)
+    if removido is None:
         print(f"[erro] Evento com id {alvo} não encontrado.")
         return False
 
-    removido = EVENTOS.pop(idx)
+    # Usa o serviço de domínio para efetivar a remoção preservando EVENTOS
+    from domínio.serviços import cancelar_evento as _srv_cancelar_evento
+
+    repo_eventos = _EventoRepoDoMain()
+    ok = _srv_cancelar_evento(repo_eventos, alvo)
+    if not ok:
+        print(f"[erro] Evento com id {alvo} não encontrado.")
+        return False
+
     print("[ok] Evento cancelado:", removido)
     return True
 
@@ -350,14 +441,35 @@ def atualizar_evento() -> dict | None:
                 print("[erro] Conflito de horário para esta sala.")
                 return None
 
-    # Persistir alterações
-    ev["titulo"] = novo_titulo
-    ev["sala_id"] = novo_sala_id
-    ev["inicio"] = novo_inicio
-    ev["fim"] = novo_fim
+    # Persistir alterações via serviço de domínio e adaptadores
+    from domínio.serviços import atualizar_evento as _srv_atualizar_evento
 
-    print("[ok] Evento atualizado:", ev)
-    return ev
+    repo_eventos = _EventoRepoDoMain()
+    repo_salas = _SalaRepoDoMain()
+    atualizado = _srv_atualizar_evento(
+        repo_eventos,
+        repo_salas,
+        ev["id"],
+        titulo=novo_titulo,
+        sala_id=novo_sala_id,
+        inicio=novo_inicio,
+        fim=novo_fim,
+    )
+    if atualizado is None:
+        # Fallback: caso alguma validação do serviço falhe (não esperado aqui)
+        print("[erro] Não foi possível atualizar o evento.")
+        return None
+
+    ev_dict = {
+        "id": atualizado.id,
+        "sala_id": atualizado.sala_id,
+        "titulo": atualizado.titulo,
+        "inicio": atualizado.inicio,
+        "fim": atualizado.fim,
+    }
+
+    print("[ok] Evento atualizado:", ev_dict)
+    return ev_dict
 
 
 def listar_eventos() -> None:
@@ -367,23 +479,19 @@ def listar_eventos() -> None:
         print("[aviso] Não há eventos cadastrados.")
         return
 
-    # Mapa auxiliar de sala_id -> nome
-    mapa_salas = {s.get("id"): s.get("nome") for s in SALAS}
-    # Ordena por início, depois sala_id e id
-    ordenados = sorted(
-        EVENTOS,
-        key=lambda e: (
-            e.get("inicio"),
-            e.get("sala_id"),
-            e.get("id"),
-        ),
-    )
-    for e in ordenados:
-        sid = e.get("sala_id")
+    # Usa os serviços de domínio para a ordenação, preservando o formato de saída
+    from domínio.serviços import listar_eventos as _srv_listar_eventos
+
+    repo_eventos = _EventoRepoDoMain()
+    repo_salas = _SalaRepoDoMain()
+    mapa_salas = {s.id: s.nome for s in repo_salas.listar()}
+    eventos = _srv_listar_eventos(repo_eventos)
+    for e in eventos:
+        sid = e.sala_id
         snome = mapa_salas.get(sid, "(desconhecida)")
-        ini = e.get("inicio")
-        fim = e.get("fim")
-        print(f"- {e['id']}: {e['titulo']} (sala {sid} - {snome}) [{ini} -> {fim}]")
+        ini = e.inicio
+        fim = e.fim
+        print(f"- {e.id}: {e.titulo} (sala {sid} - {snome}) [{ini} -> {fim}]")
 
 
 def menu():
