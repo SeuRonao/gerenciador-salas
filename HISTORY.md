@@ -86,3 +86,8 @@ Todas as mudanças significativas neste projeto serão documentadas neste arquiv
   eliminando os adaptadores de repositório baseados em listas globais.
 - Mantidos os fluxos interativos e mensagens originais (I/O), com mesmas saídas e formatos dos dicionários retornados.
 - Testes de ponta a ponta foram previamente ajustados para não depender dos globais, garantindo isolamento via `importlib.reload(main)`.
+
+## v0.2.9
+
+- Atualiza `src/main.py` para usar a fachada de aplicação (`src/app/fachada.py`) em todos os fluxos interativos, eliminando chamadas diretas aos serviços do domínio.
+- Atualiza exercícios em `EXERCÍCIOS.md` para refletir o uso da fachada e do container, orientando a separação entre I/O e lógica de negócio.

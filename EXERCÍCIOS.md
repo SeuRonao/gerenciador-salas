@@ -1,81 +1,102 @@
-# Exercícios – Gerenciador de Salas
+# Exercícios – Gerenciador de Salas (versão com DDD leve)
 
-Este conjunto de exercícios é dividido em duas trilhas:
+Agora o projeto já está estruturado por camadas:
 
-- Parte 1: Melhorias simples no código atual (prática incremental).
-- Parte 2: Mudanças que expõem as dificuldades do desenho monolítico (motivação para refatorar).
+- Domínio (`src/domínio/`): modelos, regras e serviços (sem I/O)
+- Infra (`src/infra/`): repositórios em memória
+- Aplicação (`src/app/`): `container` (composição) e `fachada` (UI -> domínio)
+- UI (`src/main.py`): prompts/prints, chama a fachada e mantém as mensagens esperadas nos testes
+
+Os exercícios abaixo foram atualizados para explorar esse desenho. A ideia é praticar a evolução incremental de regras no domínio e refinamentos na fachada, mantendo o UI simples.
 
 ## Regras gerais
 
-- Linguagem: Python >= 3.13.
-- Não adicionar dependências externas.
-- Manter dados em memória (listas/dicts) como no projeto.
-- Mensagens e comentários em PT-BR. Funções em snake_case.
-- Faça pequenos commits e descreva no HISTORY.md o que mudou.
+- Python >= 3.13, sem dependências externas
+- Dados em memória (listas/entidades), mensagens PT-BR, snake_case
+- Commits pequenos e anotações no `HISTORY.md`
 
-Arquivo de referência: `main.py` (menu interativo, operações sobre salas e eventos).
-
-## Parte 1 – Melhorias simples e didáticas
-
-Objetivo: treinar validações, funções utilitárias, listagens e pequenas refatorações sem mudar a arquitetura geral.
+## Trilha A — Incremental (refino de regras e APIs)
 
 1. Nome de sala único (case-insensitive)
-2. Título do evento com tamanho válido (impor 3 ≤ len(título) ≤ 60).
+
+   - Onde: serviço `cadastrar_sala` (ou regra pura auxiliar em `regras.py`)
+   - Critério de aceitação: ao tentar cadastrar nome repetido (ignorando maiúsculas/minúsculas), a fachada retorna erro e a UI mantém a mensagem de erro consistente
+
+2. Título do evento com tamanho válido (3–60)
+
+   - Onde: `regras.py` (função `titulo_valido`) + uso em `agendar_evento` e `atualizar_evento`
+   - Aceite: títulos menores que 3 ou maiores que 60 são recusados com mensagem específica
+
 3. Não agendar no passado
-4. Duração máxima de evento (limitar a duração máxima de um evento)
-5. Imprimir as datas no formato `YYYY-MM-DD HH:MM`
-6. Listagem com ordenação e filtros
-   - Objetivo: enriquecer `listar_salas()` sem efeitos colaterais.
-   - Tarefas:
-     - Permitir ordenar por `id|nome|capacidade` (asc/desc) e filtrar por `capacidade_min`.
-   - Entrada pode ser interativa simples (perguntar critério) sem alterar o estado.
+
+   - Onde: `regras.py` função pura (usa `datetime.now()`), aplicada em `agendar_evento` / `atualizar_evento`
+   - Aceite: início anterior ao “agora” é recusado
+
+4. Duração máxima de evento
+
+   - Onde: `regras.py` (`duracao_valida(inicio, fim, max_horas=8)`) + serviços
+   - Aceite: rejeitar eventos com duração acima do limite configurável
+
+5. Datas formatadas uniformemente
+
+   - Onde: fachada (helpers `_parse_dt` e `formatar_dt` com constante de formato)
+   - Aceite: ajustes não quebram os testes atuais; se necessário, criar uma listagem “formatada” paralela
+
+6. Listagem avançada de salas (ordenar/filtrar)
+
+   - Onde: novo serviço puro `listar_salas_avançado(repo, ordenar_por, ordem, capacidade_min)` + `listar_salas_filtrado_ui` na fachada
+   - Aceite: UI consegue solicitar ordenação por `id|nome|capacidade`, asc/desc, e filtrar por capacidade mínima
+
 7. Bloquear remoção de sala com eventos
+
+   - Onde: serviço `remover_sala` (ou variante) consultando `evento_repo`
+   - Aceite: sala com eventos não é removida; mensagem clara via fachada/UI
+
 8. Buscar salas por nome (substring)
+   - Onde: serviço puro `buscar_salas_por_nome` + `*_ui` na fachada
+   - Aceite: case-insensitive, retorna DTOs das salas encontradas
 
-## Parte 2 – Por que o monólito dificulta a manutenção?
+## Trilha B — Avançada (mudanças transversais)
 
-Objetivo: propor mudanças globais/frequentes que, feitas no desenho atual (input/print espalhados e lógica acoplada), se tornam difíceis.
-A ideia é sentir a dor e depois apontar a refatoração como solução.
+1. Trocar formato de data para `DD/MM/YYYY HH:MM`
 
-1. Troca de formato de data para `DD/MM/YYYY HH:MM`
-   - Experiência: mude o formato em TODO o sistema.
-   - Perguntas-guia: quantos pontos precisam ser alterados? O que acontece se esquecer um?
-   - Critério: tudo continua funcionando e listagens/entradas usam o novo formato.
-   - Insight: strings de formato estão duplicadas; centralizar em utilitários facilita.
-2. Nova regra global: eventos só em dias úteis (seg-sex)
-   - Experiência: aplicar a regra em criação e atualização.
-   - Perguntas-guia: quantos lugares tratam data? Há risco de divergência?
-   - Critério: recusas corretas com `[erro]` e mensagem clara.
-   - Insight: mesma regra repetida em vários fluxos indica necessidade de função pura reutilizável.
-3. Outro canal de entrada: script não interativo
-   - Experiência: querer agendar/cancelar chamando funções sem `input/print` (por exemplo, de um teste ou script).
-   - Tarefas:
-     - Tentar usar as funções atuais diretamente em código (sem digitar no console) e observar a dificuldade.
-     - Em seguida, criar funções puras: `cadastrar_sala_puro`, `agendar_evento_puro`, `cancelar_evento_puro` que recebem parâmetros e retornam valores, sem _prints_ e sem _inputs_.
-   - Insight: separar I/O da regra de negócio melhora testabilidade e reuso.
-4. Localização de mensagens (PT-BR e EN)
-   - Experiência: permitir que o sistema troque entre PT-BR e EN para mensagens.
-   - Perguntas-guia: quantos prints precisam ser tocados? Há concatenação de strings que dificulta?
-   - Critério: trocar um "idioma atual" reflete em todas as mensagens.
-   - Insight: camadas de apresentação e domínios misturadas geram retrabalho.
-5. Relatório por sala (horas agendadas no mês)
-   - Experiência: somar duração dos eventos por sala e imprimir relatório filtrável por mês.
-   - Perguntas-guia: onde colocar essa lógica? Ela depende de I/O?
-   - Critério: cálculo correto e separado de entrada/saída.
-   - Insight: funções puras e módulos por domínio (salas/eventos/utils) deixam claro onde cada regra vive.
-6. Feature toggle: permitir eventos "colados" (fim == início)
-   - Experiência: adicionar uma flag global (ex.: `PERMITIR_ENCOSTADOS = True`) que altera a regra de conflito.
-   - Perguntas-guia: quantos pontos de conflito existem? A mudança é atômica?
-   - Critério: ao trocar a flag, o comportamento de conflito muda em todos os fluxos.
-   - Insight: uma única função de conflito torna a mudança local.
-7. Refatoração opcional como solução
-   - Proposta: mover regras de negócio para funções puras e, se o arquivo crescer, separar em `salas.py`, `eventos.py` e `utils.py`. O `main.py` fica só com o menu e I/O.
-   - Critério: manter a interface interativa intacta; cobrir os casos acima com menos pontos de mudança.
+   - Onde: uma constante na fachada + helpers centralizados
+   - Aceite: mudar a constante ajusta parsing/prints; UI permanece simples
 
-## Como Trabalhar
+2. Nova regra global: eventos só em dias úteis
 
-- Pequenos commits por exercício; descreva no `HISTORY.md`.
-- Não adicionar bibliotecas externas.
-- Se fizer refatorações maiores, atualize `README.md` com breve explicação de como executar.
+   - Onde: `regras.py` função `é_dia_util(dt)`; usada nos serviços
+   - Aceite: criação e atualização recusam eventos fora de seg–sex
 
-Bom estudo! O foco é sentir os pontos de atrito do monólito e, aos poucos, evoluir para um desenho mais testável e modular, sem perder a simplicidade didática.
+3. Uso programático (sem I/O)
+
+   - Onde: expor “API” simples (pode ser direto via `fachada`) no README
+   - Aceite: exemplos de código funcionam chamando fachada/serviços sem input/print
+
+4. Localização de mensagens (PT-BR/EN)
+
+   - Onde: fachada passa a retornar códigos de erro; UI resolve código -> string via dicionário de mensagens
+   - Aceite: troca de idioma afeta todas as mensagens sem tocar regras
+
+5. Relatório por sala (horas no mês)
+
+   - Onde: serviço puro que soma `fim - inicio` por sala
+   - Aceite: retorna dados prontos para imprimir; fachada faz parsing de `ano/mes`
+
+6. Feature toggle: permitir eventos colados (fim == início)
+
+   - Onde: parâmetro/constante em `regras.py` afetando a regra de conflito
+   - Aceite: alternar a flag muda o comportamento em criação/atualização
+
+7. Refinos DDD opcionais
+   - DTOs: substituir dicts soltos por TypedDict ou dataclasses na fachada
+   - Remover imports de `domínio.*` do `main.py` (ficar 100% dependente da fachada)
+   - “listar_eventos_formatado_ui”: UI imprime apenas strings formatadas vindas da aplicação
+
+## Como trabalhar
+
+- Priorize as regras como serviços/_"regras puras"_ no domínio
+- Faça o parsing e mensagens na fachada; mantenha a UI apenas orquestrando prompts e prints
+- Para cada exercício, crie testes unitários no nível de domínio/fachada e evite mexer nos E2E, a menos que o comportamento visível mude
+
+Bom estudo! Agora a proposta é evoluir o domínio e a fachada, com uma UI estável e simples, reforçando os benefícios do DDD leve adotado no projeto.
