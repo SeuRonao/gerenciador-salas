@@ -269,85 +269,79 @@ def atualizar_evento() -> dict | None:
         print(f"- {e.id}: {e.titulo} (sala {e.sala_id}) [{ini} -> {fim}]")
 
     id_str = input("Digite o id do evento a atualizar: ").strip()
+    # Descobre o evento atual (se id válido) para montar prompts padrão
+    ev = None
     try:
         alvo = int(id_str)
+        ev = repo_eventos.obter_por_id(alvo)
     except (TypeError, ValueError):
-        print("[erro] O id do evento deve ser um número inteiro.")
-        return None
-
-    ev = repo_eventos.obter_por_id(alvo)
+        pass
     if ev is None:
-        print(f"[erro] Evento com id {alvo} não encontrado.")
-        return None
+        # Delega validação/mensagem detalhada para a fachada
+        ok, result = _fachada.atualizar_evento_ui(
+            _container, id_str, titulo=None, sala_id=None, inicio=None, fim=None
+        )
+        if not ok:
+            msg = str(result)
+            if msg == "id do evento inválido":
+                print("[erro] O id do evento deve ser um número inteiro.")
+            else:
+                print(f"[erro] Evento com id {id_str} não encontrado.")
+            return None
+        # Se chegou aqui, ev existe; atualiza referência
+        ev = repo_eventos.obter_por_id(int(id_str))
 
     print("Deixe em branco para manter o valor atual.")
-    novo_titulo = input(f"Título [{ev.titulo}]: ").strip()
-    if not novo_titulo:
-        novo_titulo = ev.titulo
+    # Garantia para linters/tipagem: ev deve existir neste ponto
+    if ev is None:
+        print(f"[erro] Evento com id {id_str} não encontrado.")
+        return None
+    novo_titulo_in = input(f"Título [{ev.titulo}]: ").strip()
 
     print("Salas disponíveis:")
     for s in repo_salas.listar():
         print(f"- {s.id}: {s.nome} [{s.capacidade}]")
     sala_in_str = input(f"Sala id [{ev.sala_id}]: ").strip()
-    if sala_in_str:
-        try:
-            novo_sala_id = int(sala_in_str)
-        except (TypeError, ValueError):
-            print("[erro] O id da sala deve ser um número inteiro.")
-            return None
-    else:
-        novo_sala_id = ev.sala_id
 
     print("Formato de data/hora: YYYY-MM-DD HH:MM")
     ini_in = input(f"Início [{ev.inicio}]: ").strip()
     fim_in = input(f"Fim [{ev.fim}]: ").strip()
-    try:
-        novo_inicio = (
-            datetime.strptime(ini_in, "%Y-%m-%d %H:%M") if ini_in else ev.inicio
-        )
-        novo_fim = datetime.strptime(fim_in, "%Y-%m-%d %H:%M") if fim_in else ev.fim
-    except ValueError:
-        print("[erro] Datas inválidas. Use o formato YYYY-MM-DD HH:MM.")
-        return None
 
-    # Validações
-    if repo_salas.obter_por_id(novo_sala_id) is None:
-        print("[erro] Sala informada não existe.")
-        return None
-    if not novo_titulo:
-        print("[erro] O título do evento não pode ser vazio.")
-        return None
-    if novo_fim <= novo_inicio:
-        print("[erro] O horário de fim deve ser maior que o de início.")
-        return None
+    # Normaliza entradas para fachada (None = manter)
+    titulo_arg = None if novo_titulo_in == "" else novo_titulo_in
+    sala_arg = None if sala_in_str == "" else sala_in_str
+    inicio_arg = None if ini_in == "" else ini_in
+    fim_arg = None if fim_in == "" else fim_in
 
-    # Conflitos (ignora o próprio evento)
-    for e2 in repo_eventos.listar_por_sala(novo_sala_id):
-        if e2.id == ev.id:
-            continue
-        ei = e2.inicio
-        ef = e2.fim
-        if not (novo_fim <= ei or novo_inicio >= ef):
-            print("[erro] Conflito de horário para esta sala.")
-            return None
-
-    # Persistir alterações via serviço de domínio e adaptadores
-    from domínio.serviços import atualizar_evento as _srv_atualizar_evento
-
-    atualizado = _srv_atualizar_evento(
-        repo_eventos,
-        repo_salas,
-        ev.id,
-        titulo=novo_titulo,
-        sala_id=novo_sala_id,
-        inicio=novo_inicio,
-        fim=novo_fim,
+    ok, result = _fachada.atualizar_evento_ui(
+        _container,
+        id_str,
+        titulo=titulo_arg,
+        sala_id=sala_arg,
+        inicio=inicio_arg,
+        fim=fim_arg,
     )
-    if atualizado is None:
-        # Fallback: caso alguma validação do serviço falhe (não esperado aqui)
-        print("[erro] Não foi possível atualizar o evento.")
+    if not ok:
+        msg = str(result)
+        if msg == "id do evento inválido":
+            print("[erro] O id do evento deve ser um número inteiro.")
+        elif msg == "evento não encontrado":
+            print(f"[erro] Evento com id {id_str} não encontrado.")
+        elif msg == "id da sala inválido":
+            print("[erro] O id da sala deve ser um número inteiro.")
+        elif msg.startswith("formato de data inválido"):
+            print("[erro] Datas inválidas. Use o formato YYYY-MM-DD HH:MM.")
+        elif msg == "sala não existe":
+            print("[erro] Sala informada não existe.")
+        elif msg == "intervalo de datas inválido":
+            print("[erro] O horário de fim deve ser maior que o de início.")
+        elif msg == "conflito de horário":
+            print("[erro] Conflito de horário para esta sala.")
+        else:
+            print("[erro] Não foi possível atualizar o evento.")
         return None
 
+    atualizado = result
     ev_dict = {
         "id": atualizado.id,
         "sala_id": atualizado.sala_id,

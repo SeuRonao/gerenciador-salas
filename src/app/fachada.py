@@ -136,33 +136,69 @@ def atualizar_evento_ui(
     inicio: str | None = None,
     fim: str | None = None,
 ) -> Tuple[bool, Any]:
+    # Parse do id do evento
     evento_id = _parse_int(evento_id_str)
     if evento_id is None or evento_id <= 0:
         return False, "id do evento inválido"
 
-    sala_id_int: int | None
+    # Evento deve existir
+    atual = container.evento_repo.obter_por_id(evento_id)
+    if atual is None:
+        return False, "evento não encontrado"
+
+    # Parse opcional do id de sala
     if sala_id is None or sala_id == "":
-        sala_id_int = None
+        sala_id_int: int | None = None
+        sala_destino = atual.sala_id
     else:
         sala_id_int = _parse_int(sala_id)
         if sala_id_int is None or sala_id_int <= 0:
             return False, "id da sala inválido"
+        sala_destino = sala_id_int
 
-    inicio_dt: datetime | None
+    # Parse opcional de datas
     if inicio is None or inicio == "":
-        inicio_dt = None
+        inicio_dt: datetime | None = None
+        efetivo_inicio = atual.inicio
     else:
         inicio_dt = _parse_dt(inicio)
         if inicio_dt is None:
             return False, "formato de data inválido (YYYY-MM-DD HH:MM)"
+        efetivo_inicio = inicio_dt
 
-    fim_dt: datetime | None
     if fim is None or fim == "":
-        fim_dt = None
+        fim_dt: datetime | None = None
+        efetivo_fim = atual.fim
     else:
         fim_dt = _parse_dt(fim)
         if fim_dt is None:
             return False, "formato de data inválido (YYYY-MM-DD HH:MM)"
+        efetivo_fim = fim_dt
+
+    # Título: manter se None, aceitar string vazia como manter (caller deve normalizar)
+
+    # Sala deve existir se fornecida
+    if (
+        sala_id_int is not None
+        and container.sala_repo.obter_por_id(sala_id_int) is None
+    ):
+        return False, "sala não existe"
+
+    # Intervalo válido após aplicar defaults
+    if not validar_intervalo(efetivo_inicio, efetivo_fim):
+        return False, "intervalo de datas inválido"
+
+    # Conflito (ignorar o próprio evento)
+    existentes = [
+        e
+        for e in container.evento_repo.listar_por_sala(sala_destino)
+        if e.id != atual.id
+    ]
+    if (
+        encontrar_conflito(existentes, sala_destino, efetivo_inicio, efetivo_fim)
+        is not None
+    ):
+        return False, "conflito de horário"
 
     ev = _atualizar_evento(
         container.evento_repo,
