@@ -59,7 +59,9 @@ Futuramente, podemos evoluir o projeto para incluir essas melhorias e principalm
 
 ## Arquitetura atual
 
-Para facilitar a evolução, o núcleo do problema (salas, eventos e alocação) está modelado em `src/domínio/` e já há implementações em memória e um container simples:
+Para facilitar a evolução, o núcleo do problema (salas, eventos e alocação) está modelado em `src/domínio/` e já há implementações em memória e um container simples. O fluxo completo hoje é:
+
+UI (main.py) → Fachada (app/fachada.py) → Serviços de Domínio (domínio/serviços.py) → Repositórios (infra/repos_memória.py)
 
 - `modelos.py`: dataclasses `Sala` e `Evento`
 - `regras.py`: funções puras para validar intervalos e detectar conflitos
@@ -77,7 +79,7 @@ Composição (container):
 - `src/app/container.py`:
   - `criar_container_memória()` cria um container com instâncias independentes dos repositórios em memória.
 
-Essa camada não faz input/print, nem conhece a forma de persistência. O arquivo `src/main.py` continua como um monólito interativo para fins didáticos; em passos seguintes, o menu poderá ser conectado aos serviços do domínio.
+Essa camada (domínio) não faz input/print, nem conhece a forma de persistência.
 
 Façade de aplicação (UI -> domínio, sem I/O):
 
@@ -91,6 +93,13 @@ Main integrado ao domínio (sem globais):
   sem variáveis globais de dados. Todos os fluxos interativos (input/print) foram preservados:
   - Salas: cadastrar, listar, remover, buscar por id
   - Eventos: agendar, cancelar, atualizar, listar
+
+### Fluxo de dados (exemplo: agendar evento)
+
+1. `main.criar_evento()` coleta entradas do usuário e delega para `fachada.agendar_evento_ui()`.
+2. A fachada valida e converte strings (id, datas) e chama `serviços.agendar_evento(...)`.
+3. O serviço consulta os repositórios do container (em memória), aplica regras (`regras.py`) e cria o evento.
+4. O `main.py` imprime a resposta no formato didático (dict), preservando mensagens esperadas nos testes.
 
 Exemplo rápido (programático com container + serviços):
 
@@ -145,6 +154,31 @@ Regras de agendamento:
 - O título não pode ser vazio.
 - O horário de fim deve ser maior que o de início.
 - Não pode haver sobreposição de horários para a mesma sala.
+
+## Sugestões de melhoria (próximos passos leve-DDD)
+
+1. Afinar fronteira UI ↔ aplicação
+
+- Remover qualquer import de `domínio.*` em `main.py` (ficar só com `app.fachada` e `app.container`).
+- Mover para a fachada o enriquecimento de listagem (ex.: `listar_eventos` já retornar linhas com nome da sala) para que o `main` apenas imprima.
+
+2. Centralizar parsing na fachada
+
+- Extrair helpers de parsing/validação (id, datetime) para a fachada e reaproveitar no `main` sem alterar ordem dos prompts/mensagens.
+
+3. Tipos de retorno explícitos na aplicação
+
+- Trocar dicts “soltos” por DTOs (TypedDict) na fachada: `SalaDTO`, `EventoDTO`. Mantém conteúdos iguais, facilita a leitura/IDE.
+
+4. Testes unitários adicionais da fachada
+
+- Cobrir cenários de `remover_sala_ui`, `buscar_sala_por_id_ui` e mais casos de `atualizar_evento_ui` (manter campos, conflito, intervalo inválido).
+
+5. Documentação e CI
+
+- README: incluir mini diagrama (como o fluxo acima) e tabelinha de mapeamento de mensagens (UI ↔ fachada).
+- HISTORY: registrar as migrações para a fachada e retirada de globais.
+- CI: workflow GitHub Actions com `pytest` e `ruff`.
 
 ## Testes
 
